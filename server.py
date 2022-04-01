@@ -2,7 +2,7 @@ from flask import Flask, Blueprint, render_template, redirect, url_for, request,
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room, close_room
 import redis
-import threading
+import time
 
 
 socketio = SocketIO(cors_allowed_origins='*')
@@ -17,6 +17,8 @@ socketio.init_app(app)
 
 
 interface_id = {}
+status_casier = 'CLOSE'
+status_robot = ''
 
 
 
@@ -40,8 +42,55 @@ def interface(auth):
 
 @socketio.on('raspberry')
 def raspberry(data):
-    sid = interface_id['123']
-    socketio.emit('data_to_interface', data, to=sid)
+    global status_casier, status_robot
+
+    if(data['State_error'] == 'NO_ERROR' and data['State_connection_base'] == 'CONNECTED'):
+        # Afficher pendant 10secondes CASIER OUVERT puis afficher WAITING_FOR_CODE pour que le client entre son code et dévérouille le casier
+        # Comparer avec une valeur qui s'update à chaque fois qu'un message est reçu pour ne pas envoyer à chaque fois CASIER OPEN
+
+        if (data['State_door'] == 'OPEN'):
+            if status_casier == 'CLOSE':
+                status_casier = 'OPEN'
+
+                if(interface_id) :
+                    sid = interface_id['123']
+                    socketio.emit('data_to_interface', data['State_door'], to=sid)
+
+                    socketio.sleep(5)
+
+                    socketio.emit('data_to_interface', data['State_robot'], to=sid)
+
+
+        if (data['State_door'] == 'CLOSE'):
+            if status_casier == 'OPEN':
+                status_casier = 'CLOSE'
+
+                if(interface_id) :
+                    sid = interface_id['123']
+                    socketio.emit('data_to_interface', data['State_door'], to=sid)
+
+                    socketio.sleep(5)
+
+                    socketio.emit('data_to_interface', data['State_robot'], to=sid)
+                    
+
+        if (data['State_robot'] != status_robot):
+            status_robot = data['State_robot']
+
+            if(interface_id) :
+                sid = interface_id['123']
+                socketio.emit('data_to_interface', data['State_robot'], to=sid)
+
+
+    if(data['State_error'] == 'ERROR'):
+        if(interface_id) :
+            sid = interface_id['123']
+            socketio.emit('data_to_interface', data['State_error'], to=sid)
+
+    if(data['State_connection_base'] == 'DISCONNECTED'):
+            if(interface_id) :
+                sid = interface_id['123']
+                socketio.emit('data_to_interface', data['State_connection_base'], to=sid)
 
 
 

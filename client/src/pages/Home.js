@@ -12,13 +12,26 @@ function Home() {
     const [mode, setMode] = useState()
     const [mouv, setMouv] = useState(false)
 
-    const tab = ['Livraison', 'Waiting', 'Problem', 'Casier Ouvert', 'Casier Fermé'];
+    const tab = ['IN_DELIVERY', 'WAITING', 'ERROR', 'DISCONNECTED', 'OPEN', 'CLOSE', 'WAITING_FOR_CODE'];
+
+    const display_message = {
+        'IN_DELIVERY': 'En Livraison',
+        'WAITING': "En atttente",
+        'ERROR': 'Un problème est arrivé',
+        'DISCONNECTED': 'Un problème est arrivé (disconnected)',
+        'OPEN': 'Le casier est ouvert',
+        'CLOSE': 'Le casier est fermé',
+        'WAITING_FOR_CODE' : 'Rentrez votre code pour déverouillez le casier'
+    }
+
     const color = {
-        'Livraison': '#4FB286',
-        'Waiting': '#334195',
-        'Problem': '#81171B',
-        'Casier Ouvert': '#D65108',
-        'Casier Fermé': '#62A8AC',
+        'IN_DELIVERY': '#4FB286',
+        'WAITING': '#334195',
+        'ERROR': '#81171B',
+        'DISCONNECTED': '#81171B',
+        'OPEN': '#D65108',
+        'CLOSE': '#62A8AC',
+        'WAITING_FOR_CODE': '#5ABCB9'
     }
 
     const [selectedTab, setSelectedTab] = useState(tab[0])
@@ -38,7 +51,7 @@ function Home() {
         socket.on('data_to_interface', (data) => {
             console.log(data)
             setMode(data)
-            setSelectedTab('Waiting')
+            setSelectedTab(data)
         })
     }, [])
 
@@ -184,13 +197,13 @@ function Home() {
 
         <div className="home" >
 
-            <button onClick={() => {
+            {/* <button onClick={() => {
                 setMouv(!mouv)
                 i += 1
                 setSelectedTab(tab[i % 5])
             }}>
                 click
-            </button>
+            </button> */}
 
             <AnimatePresence exitBeforeEnter>
                 <motion.div
@@ -201,7 +214,7 @@ function Home() {
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.15 }}
                 >
-                    {selectedTab}
+                    {display_message[selectedTab]}
                 </motion.div>
             </AnimatePresence>
 
@@ -223,7 +236,7 @@ function Home() {
             </div>
 
             {
-                selectedTab === 'Waiting' ?
+                selectedTab === 'WAITING' ?
                     <AnimatePresence exitBeforeEnter>
                         <motion.div
                             className="message"
