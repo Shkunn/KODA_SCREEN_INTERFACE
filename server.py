@@ -19,6 +19,7 @@ socketio.init_app(app)
 interface_id = {}
 status_casier = 'CLOSE'
 status_robot = ''
+general = False
 
 
 
@@ -42,7 +43,9 @@ def interface(auth):
 
 @socketio.on('raspberry')
 def raspberry(data):
-    global status_casier, status_robot
+    global status_casier, status_robot, general
+
+    print(data)
 
     if(data['State_error'] == 'NO_ERROR' and data['State_connection_base'] == 'CONNECTED'):
         # Afficher pendant 10secondes CASIER OUVERT puis afficher WAITING_FOR_CODE pour que le client entre son code et dévérouille le casier
@@ -56,9 +59,9 @@ def raspberry(data):
                     sid = interface_id['123']
                     socketio.emit('data_to_interface', data['State_door'], to=sid)
 
+                    general = True
                     socketio.sleep(5)
-
-                    socketio.emit('data_to_interface', data['State_robot'], to=sid)
+                    general = False
 
 
         if (data['State_door'] == 'CLOSE'):
@@ -69,17 +72,14 @@ def raspberry(data):
                     sid = interface_id['123']
                     socketio.emit('data_to_interface', data['State_door'], to=sid)
 
+                    general = True
                     socketio.sleep(5)
-
-                    socketio.emit('data_to_interface', data['State_robot'], to=sid)
+                    general = False
                     
 
-        if (data['State_robot'] != status_robot):
-            status_robot = data['State_robot']
-
-            if(interface_id) :
-                sid = interface_id['123']
-                socketio.emit('data_to_interface', data['State_robot'], to=sid)
+        if(interface_id and not general) :
+            sid = interface_id['123']
+            socketio.emit('data_to_interface', data['State_robot'], to=sid)
 
 
     if(data['State_error'] == 'ERROR'):
